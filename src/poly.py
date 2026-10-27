@@ -3,8 +3,12 @@ Exact polynomial arithmetic over the rationals.
 
 Coefficients are stored from lowest to highest degree.
 
+# figure out what __dunder__ methods to implement
+# recall: print function calls the __str__
 >>> p = Poly([1, 2, 3])
->>> print(p)
+>>> p               #calls __repr
+Poly([1, 2, 3])
+>>> print(p)        #calls __str__
 3x**2 + 2x + 1
 
 Polynomials are just functions with special structure,
@@ -105,6 +109,103 @@ class Poly:
     >>> print(Poly([1, 0, 2]))
     2x**2 + 1
     '''
+
+    def __init__(self, coeffs):
+        self.coeffs = list(coeffs)
+        while len(self.coeffs) > 1 and self.coeffs[-1] == 0:
+            self.coeffs.pop()
+        if len(self.coeffs) == 0:
+            self.coeffs = [0]
+
+    def __repr__(self):
+        return f'Poly({self.coeffs!r})'
+
+    def __str__(self):
+        terms = []
+        for i in range(len(self.coeffs) - 1, -1, -1):
+            c = self.coeffs[i]
+            if c == 0:
+                continue
+
+            if i == 0:
+                var = ''
+            elif i == 1:
+                var = 'x'
+            else:
+                var = f'x**{i}'
+
+            if abs(c) == 1 and i > 0:
+                body = var
+            else:
+                body = f'{abs(c)}{var}'
+
+            if len(terms) == 0:
+                terms.append('-' + body if c < 0 else body)
+            else:
+                terms.append(('- ' if c < 0 else '+ ') + body)
+
+        if len(terms) == 0:
+            return '0'
+        return ' '.join(terms)
+
+    def __eq__(self, other):
+        if not isinstance(other, Poly):
+            return NotImplemented
+        return self.coeffs == other.coeffs
+
+    def __call__(self, x):
+        return self.eval_horner(x)
+
+    def derivative(self):
+        return Poly([i * c for i, c in enumerate(self.coeffs)][1:])
+
+    def __neg__(self):
+        return Poly([-c for c in self.coeffs])
+
+    def __add__(self, other):
+        if not isinstance(other, Poly):
+            return NotImplemented
+        n = max(len(self.coeffs), len(other.coeffs))
+        a = self.coeffs + [0] * (n - len(self.coeffs))
+        b = other.coeffs + [0] * (n - len(other.coeffs))
+        return Poly([a[i] + b[i] for i in range(n)])
+
+    def __sub__(self, other):
+        if not isinstance(other, Poly):
+            return NotImplemented
+        return self + (-other)
+
+    def __mul__(self, other):
+        if not isinstance(other, Poly):
+            return NotImplemented
+        return self.mul_karatsuba(other)
+
+    def __pow__(self, n):
+        if not isinstance(n, int):
+            return NotImplemented
+        if n < 0:
+            raise ValueError('polynomials cannot be raised to a negative power')
+        result = Poly([1])
+        for _ in range(n):
+            result = result * self
+        return result
+
+    def __iadd__(self, other):
+        self.coeffs = (self + other).coeffs
+        return self
+
+    def __isub__(self, other):
+        self.coeffs = (self - other).coeffs
+        return self
+
+    def __imul__(self, other):
+        self.coeffs = (self * other).coeffs
+        return self
+
+    def __ipow__(self, n):
+        self.coeffs = (self ** n).coeffs
+        return self
+
     def eval_naive(self, x):
         '''
         Evaluate by summing a_i * x**i one term at a time.  The
@@ -155,6 +256,37 @@ class Poly:
                 out[i + j] += ai * bj
         return Poly(out)
 
+    def mul_karatsuba(self, other):
+        '''
+        Multiplication using Karatsuba's algorithm.
+
+        >>> Poly([1, 2]).mul_karatsuba(Poly([3, 4]))
+        Poly([3, 10, 8])
+        '''
+        return Poly(_karatsuba(self.coeffs, other.coeffs))
+
+def _add_lists(a, b):
+    '''
+    Add two coefficient lists that may have different lengths.
+
+    >>> _add_lists([1, 2], [3, 4, 5])
+    [4, 6, 5]
+    '''
+    n = max(len(a), len(b))
+    a = a + [0] * (n - len(a))
+    b = b + [0] * (n - len(b))
+    return [a[i] + b[i] for i in range(n)]
+
+
+def _sub_lists(a, b):
+    '''
+    Subtract two coefficient lists that may have different lengths.
+
+    >>> _sub_lists([5, 5, 5], [1, 2])
+    [4, 3, 5]
+    '''
+    return _add_lists(a, [-x for x in b])
+
 
 def _karatsuba(a, b):
     '''
@@ -179,3 +311,30 @@ def _karatsuba(a, b):
     >>> _karatsuba([0], [1, 2, 3])
     [0, 0, 0]
     '''
+    result_len = len(a) + len(b) - 1
+
+    n = max(len(a), len(b))
+    a = a + [0] * (n - len(a))
+    b = b + [0] * (n - len(b))
+
+    if n == 1:
+        return [a[0] * b[0]]
+
+    m = n // 2
+    a_low, a_high = a[:m], a[m:]
+    b_low, b_high = b[:m], b[m:]
+
+    z0 = _karatsuba(a_low, b_low)
+    z2 = _karatsuba(a_high, b_high)
+    z1 = _karatsuba(_add_lists(a_low, a_high), _add_lists(b_low, b_high))
+    z1 = _sub_lists(_sub_lists(z1, z0), z2)
+
+    out = [0] * (2 * n - 1)
+    for i, c in enumerate(z0):
+        out[i] += c
+    for i, c in enumerate(z1):
+        out[i + m] += c
+    for i, c in enumerate(z2):
+        out[i + 2 * m] += c
+
+    return out[:result_len]

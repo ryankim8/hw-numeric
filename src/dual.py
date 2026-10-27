@@ -134,6 +134,128 @@ class Dual:
     4 + 6ε
     '''
 
+    def __init__(self, v, d):
+        self.v = v
+        self.d = d
+
+    def __repr__(self):
+        return f'Dual(v={self.v!r}, d={self.d!r})'
+
+    def __str__(self):
+        return f'{self.v} + {self.d}ε'
+
+    def __eq__(self, other):
+        if not isinstance(other, Dual):
+            return NotImplemented
+        return self.v == other.v and self.d == other.d
+
+    def __hash__(self):
+        return hash((self.v, self.d))
+
+    def __neg__(self):
+        return Dual(
+                v = -self.v,
+                d = -self.d
+                )
+
+    def __add__(self, other):
+        if isinstance(other, Dual):
+            return Dual(
+                    v = self.v + other.v,
+                    d = self.d + other.d,
+                    )
+        return Dual(
+                v = self.v + other,
+                d = self.d,
+                )
+
+    def __radd__(self, other):
+        return Dual(
+                v = other + self.v,
+                d = self.d
+                )
+
+    def __sub__(self, other):
+        if isinstance(other, Dual):
+            return Dual(
+                    v = self.v - other.v,
+                    d = self.d - other.d
+                    )
+        return Dual(
+                v = self.v - other,
+                d = self.d)
+
+    def __rsub__(self, other):
+        return Dual(
+                v = other - self.v,
+                d = -self.d)
+
+    def __mul__(self, other):
+        if isinstance(other, Dual):
+            return Dual(
+                    v = self.v * other.v,
+                    d = self.d * other.v + self.v * other.d,
+                    )
+        return Dual(
+                v = self.v * other,
+                d = self.d * other,
+                )
+
+    def __rmul__(self, other):
+        #Implement reverse mult
+        if isinstance(other, Dual):
+            pass
+        return Dual(
+                v = self.v * other,
+                d = self.d * other
+                )
+
+    def __rmul__(self, other):
+        return Dual(
+                v = other * self.v,
+                d = other * self.d
+                )
+
+    def __truediv__(self, other):
+        if isinstance(other, Dual):
+            return Dual(
+                    v = self.v / other.v,
+                    d = (self.d * other.v - self.v * other.d) / (other.v ** 2))
+        return Dual(
+                v = self.v / other,
+                d = self.d / other
+                )
+
+    def __rtruediv__(self, other):
+        return Dual(
+                v = other / self.v,
+                d = -other * self.d / (self.v ** 2)
+                )
+
+    def __pow__(self, other):
+        if isinstance(other, Dual):
+            value = self.v ** other.v
+            deriv = value * (other.d * math.log(self.v) + other.v * self.d / self.v)
+            return Dual(
+                    v = value,
+                    d = deriv
+                    )
+        if other == 0:
+            return Dual(
+                    v = 1.0
+                    d = 0.0
+                    )
+        return Dual(
+                v = self.v ** other,
+                d = other * self.v ** (other - 1) * self.d
+                )
+
+    def __rpow__(self, other):
+        value = other ** self.v
+        return Dual(
+                v = value,
+                d = value * math.log(other) * self.d
+                )
 
 def sin(x):
     '''
@@ -169,7 +291,10 @@ def tanh(x):
     # this is the only one of these functions you need to implement
     # there's only one doctest here,
     # but lots of other tests depend on tanh
-
+    if isinstance(x, Dual):
+        t = math.tanh(x.v)
+        return Dual(t, (1 - t * t) * x.d)
+    return math.tanh(x)
 
 def exp(x):
     '''
