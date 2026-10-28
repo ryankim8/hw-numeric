@@ -265,6 +265,7 @@ class Poly:
         '''
         return Poly(_karatsuba(self.coeffs, other.coeffs))
 
+
 def _add_lists(a, b):
     '''
     Add two coefficient lists that may have different lengths.

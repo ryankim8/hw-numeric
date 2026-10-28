@@ -105,6 +105,7 @@ Dual(v=1.0, d=1.0)
 '''
 import math
 
+
 class Dual:
     '''
     The dual number v + d*epsilon with epsilon**2 == 0.
@@ -154,82 +155,75 @@ class Dual:
 
     def __neg__(self):
         return Dual(
-                v = -self.v,
-                d = -self.d
+                -self.v,
+                -self.d
                 )
 
     def __add__(self, other):
         if isinstance(other, Dual):
             return Dual(
-                    v = self.v + other.v,
-                    d = self.d + other.d,
+                    self.v + other.v,
+                    self.d + other.d,
                     )
         return Dual(
-                v = self.v + other,
-                d = self.d,
+                self.v + other,
+                self.d,
                 )
 
     def __radd__(self, other):
         return Dual(
-                v = other + self.v,
-                d = self.d
+                other + self.v,
+                self.d
                 )
 
     def __sub__(self, other):
         if isinstance(other, Dual):
             return Dual(
-                    v = self.v - other.v,
-                    d = self.d - other.d
+                    self.v - other.v,
+                    self.d - other.d
                     )
         return Dual(
-                v = self.v - other,
-                d = self.d)
+                self.v - other,
+                self.d)
 
     def __rsub__(self, other):
         return Dual(
-                v = other - self.v,
-                d = -self.d)
+                other - self.v,
+                -self.d)
 
     def __mul__(self, other):
         if isinstance(other, Dual):
             return Dual(
-                    v = self.v * other.v,
-                    d = self.d * other.v + self.v * other.d,
+                    self.v * other.v,
+                    self.d * other.v + self.v * other.d,
                     )
         return Dual(
-                v = self.v * other,
-                d = self.d * other,
+                self.v * other,
+                self.d * other,
                 )
 
     def __rmul__(self, other):
-        #Implement reverse mult
         if isinstance(other, Dual):
             pass
         return Dual(
-                v = self.v * other,
-                d = self.d * other
-                )
-
-    def __rmul__(self, other):
-        return Dual(
-                v = other * self.v,
-                d = other * self.d
+                self.v * other,
+                self.d * other
                 )
 
     def __truediv__(self, other):
         if isinstance(other, Dual):
             return Dual(
-                    v = self.v / other.v,
-                    d = (self.d * other.v - self.v * other.d) / (other.v ** 2))
+                    self.v / other.v,
+                    (self.d * other.v - self.v * other.d) / (other.v ** 2))
         return Dual(
-                v = self.v / other,
-                d = self.d / other
+                self.v / other,
+                self.d / other
                 )
 
     def __rtruediv__(self, other):
         return Dual(
-                v = other / self.v,
-                d = -other * self.d / (self.v ** 2)
+                other / self.v,
+                -other * self.d / (self.v ** 2)
                 )
 
     def __pow__(self, other):
@@ -237,25 +231,26 @@ class Dual:
             value = self.v ** other.v
             deriv = value * (other.d * math.log(self.v) + other.v * self.d / self.v)
             return Dual(
-                    v = value,
-                    d = deriv
+                    value,
+                    deriv
                     )
         if other == 0:
             return Dual(
-                    v = 1.0
-                    d = 0.0
+                    1.0,
+                    0.0
                     )
         return Dual(
-                v = self.v ** other,
-                d = other * self.v ** (other - 1) * self.d
+                self.v ** other,
+                other * self.v ** (other - 1) * self.d
                 )
 
     def __rpow__(self, other):
         value = other ** self.v
         return Dual(
-                v = value,
-                d = value * math.log(other) * self.d
+                value,
+                value * math.log(other) * self.d
                 )
+
 
 def sin(x):
     '''
@@ -295,6 +290,7 @@ def tanh(x):
         t = math.tanh(x.v)
         return Dual(t, (1 - t * t) * x.d)
     return math.tanh(x)
+
 
 def exp(x):
     '''
