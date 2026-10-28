@@ -154,102 +154,54 @@ class Dual:
         return hash((self.v, self.d))
 
     def __neg__(self):
-        return Dual(
-                -self.v,
-                -self.d
-                )
+        return Dual(-self.v, -self.d)
 
     def __add__(self, other):
         if isinstance(other, Dual):
-            return Dual(
-                    self.v + other.v,
-                    self.d + other.d,
-                    )
-        return Dual(
-                self.v + other,
-                self.d,
-                )
+            return Dual(self.v + other.v, self.d + other.d)
+        return Dual(self.v + other, self.d)
 
     def __radd__(self, other):
-        return Dual(
-                other + self.v,
-                self.d
-                )
+        return Dual(other + self.v, self.d)
 
     def __sub__(self, other):
         if isinstance(other, Dual):
-            return Dual(
-                    self.v - other.v,
-                    self.d - other.d
-                    )
-        return Dual(
-                self.v - other,
-                self.d)
+            return Dual(self.v - other.v, self.d - other.d)
+        return Dual(self.v - other, self.d)
 
     def __rsub__(self, other):
-        return Dual(
-                other - self.v,
-                -self.d)
+        return Dual(other - self.v, -self.d)
 
     def __mul__(self, other):
         if isinstance(other, Dual):
-            return Dual(
-                    self.v * other.v,
-                    self.d * other.v + self.v * other.d,
-                    )
-        return Dual(
-                self.v * other,
-                self.d * other,
-                )
+            return Dual(self.v * other.v, self.d * other.v + self.v * other.d)
+        return Dual(self.v * other, self.d * other)
 
     def __rmul__(self, other):
         if isinstance(other, Dual):
             pass
-        return Dual(
-                self.v * other,
-                self.d * other
-                )
+        return Dual(self.v * other, self.d * other)
 
     def __truediv__(self, other):
         if isinstance(other, Dual):
-            return Dual(
-                    self.v / other.v,
-                    (self.d * other.v - self.v * other.d) / (other.v ** 2))
-        return Dual(
-                self.v / other,
-                self.d / other
-                )
+            return Dual(self.v / other.v, (self.d * other.v - self.v * other.d) / (other.v ** 2))
+        return Dual(self.v / other, self.d / other)
 
     def __rtruediv__(self, other):
-        return Dual(
-                other / self.v,
-                -other * self.d / (self.v ** 2)
-                )
+        return Dual(other / self.v, -other * self.d / (self.v ** 2))
 
     def __pow__(self, other):
         if isinstance(other, Dual):
             value = self.v ** other.v
             deriv = value * (other.d * math.log(self.v) + other.v * self.d / self.v)
-            return Dual(
-                    value,
-                    deriv
-                    )
+            return Dual(value, deriv)
         if other == 0:
-            return Dual(
-                    1.0,
-                    0.0
-                    )
-        return Dual(
-                self.v ** other,
-                other * self.v ** (other - 1) * self.d
-                )
+            return Dual(1.0, 0.0)
+        return Dual(self.v ** other, other * self.v ** (other - 1) * self.d)
 
     def __rpow__(self, other):
         value = other ** self.v
-        return Dual(
-                value,
-                value * math.log(other) * self.d
-                )
+        return Dual(value, value * math.log(other) * self.d)
 
 
 def sin(x):
